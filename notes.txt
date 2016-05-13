@@ -1,0 +1,3 @@
+"Because there are only 26 letters in the
+alphabet, these cross-check sets can be represented eficiently
+as bit-vectors."

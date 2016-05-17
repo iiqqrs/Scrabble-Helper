@@ -98,8 +98,6 @@ bool Trie::findWord(string s){
 
 
 
-
-
 /*void Trie::getRackWords(const string& prefix, map<char, int>& rack, vector<string>& results){
         if (complete_word){
             results.push_back(prefix);

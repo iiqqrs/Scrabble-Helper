@@ -7,8 +7,31 @@
 #include "Board.h"
 using namespace std;
 
-//Make bool for tile is_anchor? and set k value for anchor (number of non anchors to the left)
-// //South should work in update() function. Now just delete the letters that don't make words
+//TO DO:
+//    Progress was made on extend. It's now taking the letters pre-placed on the board and making possible word combos with them
+
+//    Problem is, it's still including words that don't use the tiles on the board
+//    I think this is only a problem for when all word generations are placed to the right or left of the anchor (the anchor isn't getting included)
+//
+//   The current output is an illusion. It looks like it works, but it's still not including words where the pre-placed tile is in front of the letters
+//   from the rack
+//
+//   UPDATE: I may be wrong. It may actually work. Let's check it.
+
+void Board::legalMove(string word, int x_coord, int y_coord, string move_direction){
+    int move_score;
+    //Actually score move here
+    
+    
+    //Make a new move and enter into priority queue
+    Move m;
+    m.score = move_score;
+    m.full_word = word;
+    m.x = x_coord;
+    m.y = y_coord;
+    m.direction = move_direction;
+    scored_moves.push(m);
+}
 
 void Board::update(int i, int j, string direction){
     string tempString;
@@ -128,6 +151,46 @@ void Board::update(int i, int j, string direction){
     }
 }
 
+void Board::updateKvals(){
+    for(int i = 0; i < 15; i++){// Row
+        for(int j = 0; j < 15; j++){//Column
+            if(theBoard[i][j].anchor_vertical || theBoard[i][j].anchor_horizontal){
+                //cout << "Ever get here" <<endl;
+                //Horizontal
+                int leftIt = j-1;
+                int k_count_west = 0;
+
+                while(leftIt >-1){
+                    if((theBoard[i][leftIt].anchor_horizontal || theBoard[i][leftIt].anchor_vertical) || isalpha(theBoard[i][leftIt].letter)){ // letter = ' ' does this show up as alpha (in constructor)
+                        //cout << "K: " << k_count_west <<endl;
+                        break;
+                    }else{
+                        k_count_west++;
+                        //cout << "i: " << i << " j " << j << " k incrementing?: " << k_count_west << endl;
+                        leftIt--;
+                    }
+                }
+                theBoard[i][j].kHorizontal = k_count_west;
+                
+                
+                //Vertical
+                int northIt = i-1;
+                int k_count_north = 0;
+                //cout << "northIt " << northIt << endl;
+                while(northIt > -1){
+                    if((theBoard[i][leftIt].anchor_horizontal || theBoard[i][leftIt].anchor_vertical) || isalpha(theBoard[northIt][j].letter)){
+                        break;
+                    }else{
+                        k_count_north++;
+                        northIt--;
+                    }
+                }
+                theBoard[i][j].kVertical = k_count_north;
+            }
+        }
+    }
+}
+
 void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars at tile
     //Fuck.
     for(int i = 0; i < 15; i++){// Row
@@ -138,36 +201,36 @@ void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars 
                         //Can do south, east
                         if (!theBoard[i+1][j].used){//South
                             update(i,j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                     }
                     else if(j == 14){
                         //can do west, south
                         if(!theBoard[i][j-1].used){//West
                             update(i, j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                         if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                     }else{
                         //Can do east, west, south
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                         if(!theBoard[i][j-1].used){//West
-                            update(i, j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            update(i,j, "West");
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                         if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                     }
                 }
@@ -176,36 +239,36 @@ void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars 
                         //north, east
                         if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                     }
                     else if(j == 14){
                         //north, west
                         if(!theBoard[i-1][j].used){//North
                             update(i,j,"North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j-1].used){//West
                             update(i,j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                     }else{
                         //east, west, north
                         if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                         if(!theBoard[i][j-1].used){//West
                             update(i,j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                     }
                 }
@@ -214,36 +277,36 @@ void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars 
                         // can do east, south
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                         if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                     }
                     else if(i == 14){
                         //north, east
                         if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }  
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                     }else{
                         //north, south, east
                         if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j+1].used){//East
                             update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            theBoard[i][j+1].anchor_horizontal = true;
                         }
                         if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                     }
                 }
@@ -252,64 +315,199 @@ void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars 
                         //south, west
                         if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j-1].used){//West
                             update(i,j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                     }
                     else if(i == 14){
                         //west, north
                         if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j-1].used){//West
                             update(i,j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                     }else{
                         //north, south, west
                         if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                         }
                         if(!theBoard[i][j-1].used){//West
                             update(i,j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                         }
                     }
                 }else{
                     // can do all
                     if(!theBoard[i-1][j].used){//North
                             update(i,j, "North");
-                            theBoard[i-1][j].is_anchor = true;
+                            theBoard[i-1][j].anchor_vertical = true;
                     }
                     if(!theBoard[i+1][j].used){//South
                             update(i, j, "South");
-                            theBoard[i+1][j].is_anchor = true;
+                            theBoard[i+1][j].anchor_vertical = true;
                     }
                     if(!theBoard[i][j-1].used){//West
                             update(i,j, "West");
-                            theBoard[i][j-1].is_anchor = true;
+                            theBoard[i][j-1].anchor_horizontal = true;
                     }
                     if(!theBoard[i][j+1].used){//East
-                            update(i,j, "East");
-                            theBoard[i][j+1].is_anchor = true;
+                            update(i, j, "East");
+                            theBoard[i][j+1].anchor_horizontal = true;
                     }  
                 }
             }
         }
     }
+    updateKvals();
 }
 //To generate all moves from Anchorsquare, assuming that there are k 
 // non-anchor squares to the left of it, we call Leftpart("", root of dawg, k)
+void Board::leftPart(string partialWord, Node* root, int kHoriz, Tile tile) {
+    extendRight(partialWord, root, tile);
+    //cout << "finished right" << endl;
+    if (kHoriz > 0) {
+        //cout << "in here" << endl;
+        Node* tempNode = root;
+        for (int i = 0; i < tempNode->children().size(); i++) {
+            //cout << "over here" << endl;
+            
+            /*for(int m = 0; m < raw_rack.size(); m ++) {
+                cout << "The letter is: " << tempNode->children().at(i)->letter << " vs. " << raw_rack.at(m) << endl;
+            }*/
+            if ((find(raw_rack.begin(), raw_rack.end(), tempNode->children().at(i)->letter) != raw_rack.end())){
+                char tempChar = tempNode->children().at(i)->letter;
+                int rawRackIndex = 0;
+                for (int j = 0; j < raw_rack.size(); j++) {
+                    if (raw_rack.at(j) == tempChar) {
+                        rawRackIndex = j;
+                        break;
+                    }
+                }
+                
+                raw_rack.erase(raw_rack.begin()+rawRackIndex);
+                Node* nPrime =  tempNode->children().at(i);
+                
+                leftPart(partialWord+tempChar, nPrime, kHoriz-1, tile);
+                raw_rack.insert(raw_rack.begin()+rawRackIndex, tempChar);
+            }
+        }
+    }
+}
 
+void Board::upPart(string partialWord, Node* root, int kVert) {
+    
+}
+
+void Board::extendRight(string partialWord, Node* node, Tile tile) {
+    //cout << "Incomplete word: " << partialWord << endl;
+    if (!(tile.used)) {
+        if ((node->isComplete())) {
+           if((theBoard[tile.yCoord][(tile.xCoord)+1]).used || theBoard[tile.yCoord][tile.xCoord - partialWord.length()-1].used){
+               //cout << "Got here with: " << partialWord << endl;
+           }else{
+               //cout << "x coordinate: " << tile.xCoord << " y coordinate: " << tile.yCoord << " of tile with letter: " << partialWord[partialWord.length()-1] << endl;
+               cout << "Full word: " << partialWord << endl;
+               int word_length = partialWord.length();
+               int x_cord = tile.xCoord - word_length;
+               int y_cord = tile.yCoord;
+               legalMove(partialWord, x_cord, y_cord, "Right");
+           }
+        }
+        
+        Node* tempNode = node;
+        for (int i = 0; i < tempNode->children().size(); i++) {
+             if (find(tile.crossVertical.begin(), tile.crossVertical.end(), tempNode->children().at(i)->letter) != tile.crossVertical.end() &&
+                find(raw_rack.begin(), raw_rack.end(), tempNode->children().at(i)->letter) != raw_rack.end()) {
+                char tempChar = tempNode->children().at(i)->letter;
+                
+                int rawRackIndex = 0;
+                for (int j = 0; j < raw_rack.size(); j++) {
+                    if (raw_rack.at(j) == tempChar) {
+                        rawRackIndex = j;
+                        break;
+                    }
+                }
+                
+                raw_rack.erase(raw_rack.begin()+rawRackIndex);
+               
+                Node* nPrime =  tempNode->children().at(i);
+                //cout << "Next tile has y coord: " << tile.yCoord << " and x coord: " << tile.xCoord << endl;
+                //cout << "tile.xCoord+1: " << (tile.xCoord)+1 << endl;
+                if (!(((tile.xCoord)+1) > 14)) {
+                    Tile nextTile = theBoard[tile.yCoord][tile.xCoord+1];
+                    //cout << "Next tile has y coord: " << nextTile.yCoord << " and x coord: " << nextTile.xCoord << endl;
+                    //cout << "about to recurse" << endl;
+                    extendRight(partialWord+tempChar, nPrime, nextTile);
+                    raw_rack.insert(raw_rack.begin()+rawRackIndex, tempChar);
+                }
+            }
+        }
+    }else{
+        char charInTile = tile.letter;
+        Node* tempNode = node;
+        for (int i = 0; i < tempNode->children().size(); i++) {
+            if (tempNode->children().at(i)->letter == charInTile) {
+                Tile nextTile = theBoard[tile.yCoord][tile.xCoord+1];
+                extendRight(partialWord+charInTile, tempNode->children().at(i), nextTile);
+            }
+        }
+    }
+}
+
+void Board::extendDown(string partialWord, Node* node, Tile tile){
+    
+}
+
+//Wrapper function that facilitates the placement of a word
+//This function will call all helper functions/attributes (leftExtend(), rightExtend(), is_anchor, etc..)
+void Board::placeWord() {
+    for (int row = 0; row < 15; row++) {
+        for(int col = 0; col < 15; col++) {
+            if (theBoard[row][col].anchor_horizontal && theBoard[row][col].anchor_vertical) { //If tile is both vertical and horizontal anchor
+                //for (int rackWord = 0; rackWord < rack_words.size(); rackWord++) {
+                    //string word = rack_words[rackWord];
+                    //If statement that checks if first letter of rack word is in both cross-check vectors
+                   //if (find(theBoard[row][col].crossHorizontal.begin(), theBoard[row][col].crossHorizontal.end(), word[word.length()-1]) != theBoard[row][col].crossHorizontal.end()
+                        //&& find(theBoard[row][col].crossVertical.begin(), theBoard[row][col].crossVertical.end(), word[word.length()-1]) != theBoard[row][col].crossVertical.end()) {
+                        cout << "Tile is at x: " << theBoard[row][col].xCoord << " y: " << theBoard[row][col].yCoord << " with kHorizontal: " << theBoard[row][col].kHorizontal << endl;
+                        leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]); 
+                       
+                    //}
+                //}
+            }
+            else if ((theBoard[row][col].anchor_horizontal)) { //If tile is only a horizontal anchor
+                //for (int rackWord = 0; rackWord < rack_words.size(); rackWord++) {
+                    //string word = rack_words[rackWord];
+                    //if (find(theBoard[row][col].crossHorizontal.begin(), theBoard[row][col].crossHorizontal.end(), word[word.length()-1]) != theBoard[row][col].crossHorizontal.end()) {
+                         leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
+                        
+                    //}
+            }
+            else if (theBoard[row][col].anchor_vertical) { //If tile is only a vertical anchor
+                //for (int rackWord = 0; rackWord < rack_words.size(); rackWord++) {
+                    //string word = rack_words[rackWord];
+                    //if (find(theBoard[row][col].crossVertical.begin(), theBoard[row][col].crossVertical.end(), word[word.length()-1]) != theBoard[row][col].crossVertical.end()) {
+                         leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
+                
+                    //}
+                //}
+            }else{
+                continue;
+            }
+        }
+    }
+}
 
 Board::Board(){
     //Load dictionary
@@ -328,9 +526,10 @@ Board::Board(){
     //Call once to load rack (first line in Board.txt)
     getline(import_board,line);
     //cout <<"Our rack: " << line <<endl;
-    
+    for (int i = 0; i < line.length(); i++) {
+        raw_rack.push_back(tolower(line[i]));
+    }
     // Start anagram
-    //only reading and producing seven letter words, not 6 or 5
     for (int i = 0; i < line.length(); i++) {
         if (isalpha(line[i])) {
             line[i] = tolower(line[i]);
@@ -345,11 +544,11 @@ Board::Board(){
             for(int i = 0; i < incSize; i++){
                 tempLine += line[i];
             }
-            if(dictionary.findWord(tempLine)){
+            //if(dictionary.findWord(tempLine)){
                 if (!(find(rack_words.begin(), rack_words.end(), tempLine) != rack_words.end())){
                     rack_words.push_back(tempLine);
                 }
-            }
+            //}
             incSize++;
         }
     }
@@ -389,6 +588,8 @@ Board::Board(){
                 newTile.letter = tolower(line[i]);
                 newTile.used = true;
             }
+            newTile.xCoord = i;
+            newTile.yCoord = vertical_count;
             theBoard[vertical_count][i] = newTile;
         }
         vertical_count++;

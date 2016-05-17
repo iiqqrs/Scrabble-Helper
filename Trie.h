@@ -16,8 +16,17 @@ public:
     Node* findChild(char c);
     void appendChild(Node* child);
     vector<Node*> children();
-private:
     char letter;
+    bool isComplete() {
+        if (complete_word) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+private:
+    
     bool complete_word;
     vector<Node*> child;
 };
@@ -28,6 +37,10 @@ public:
     ~Trie();
     void newWord(string s);
     bool findWord(string s);
+    bool isComplete(Node* node);
+    Node* getRoot() {
+        return root;
+    }
     //void getRackWords(const string& prefix, map<char, int>& rack, vector<string>& results);
 private:
     Node* root;

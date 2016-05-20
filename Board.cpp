@@ -8,20 +8,73 @@
 using namespace std;
 
 //TO DO:
-//    Progress was made on extend. It's now taking the letters pre-placed on the board and making possible word combos with them
+//Words that should be printing (among others possibly):
+//faux
+//roux
 
-//    Problem is, it's still including words that don't use the tiles on the board
-//    I think this is only a problem for when all word generations are placed to the right or left of the anchor (the anchor isn't getting included)
-//
-//   The current output is an illusion. It looks like it works, but it's still not including words where the pre-placed tile is in front of the letters
-//   from the rack
-//
-//   UPDATE: I may be wrong. It may actually work. Let's check it.
-
-void Board::legalMove(string word, int x_coord, int y_coord, string move_direction){
-    int move_score;
+//i j
+void Board::legalMove(string word, int y_coord, int x_coord, string move_direction){
+    int move_score=0;
+    int letterMult[word.length()];
+    int wordMult[word.length()];
     //Actually score move here
+    //If all 7 tiles are used you get a 50 point bonus idk how we're gonna account for this
+    if(move_direction == "Right"){
+        //Create array of multipliers (both)
+        //First find the word value (including only letter multiplier)
+        //Find the highest word multiplier and multiply the word value and return.
+        //cout <<"Right score" <<endl;
+        int x_var = x_coord;
+        for(int i=0; i < word.length(); i++){
+            if(!theBoard[x_var][y_coord].used){
+                letterMult[i] = theBoard[x_var][y_coord].letter_multip;
+                wordMult[i] = theBoard[x_var][y_coord].word_multip;
+            }
+            //otherwise multiplier = 1
+            letterMult[i] = 1;
+            wordMult[i] = 1;
+        }
+        
+        int wordSum=0;
+        for(int i=0; i < word.length(); i++){
+            wordSum += (letterMult[i] * letterValues[word[i]]);
+        }
+        //cout <<"word sum: " <<wordSum <<endl;
+        //Find highest word multiplier
+        int largestWordMult = 1;
+        for(int i=0; i < word.length(); i++){
+            if(wordMult[i] > largestWordMult){
+                largestWordMult = wordMult[i];
+            }
+        }
+        move_score = (wordSum*largestWordMult);
+    }
     
+    if(move_direction == "Down"){
+        int y_var = y_coord;
+        for(int i=0; i < word.length(); i++){
+            if(!theBoard[x_coord][y_var].used){
+                letterMult[i] = theBoard[x_coord][y_var].letter_multip;
+                wordMult[i] = theBoard[x_coord][y_var].word_multip;
+            }
+            //otherwise multiplier = 1
+            letterMult[i] = 1;
+            wordMult[i] = 1;
+        }
+        
+        int wordSum=0;
+        for(int i=0; i < word.length(); i++){
+            wordSum += (letterMult[i] * letterValues[word[i]]);
+        }
+        //Find highest word multiplier
+        int largestWordMult = 1;
+        for(int i=0; i < word.length(); i++){
+            if(wordMult[i] > largestWordMult){
+                largestWordMult = wordMult[i];
+            }
+        }
+        move_score = (wordSum*largestWordMult);
+    }
     
     //Make a new move and enter into priority queue
     Move m;
@@ -192,7 +245,6 @@ void Board::updateKvals(){
 }
 
 void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars at tile
-    //Fuck.
     for(int i = 0; i < 15; i++){// Row
         for(int j = 0; j < 15; j++){//Column
             if(theBoard[i][j].used){
@@ -358,7 +410,7 @@ void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars 
                             theBoard[i+1][j].anchor_vertical = true;
                     }
                     if(!theBoard[i][j-1].used){//West
-                            update(i,j, "West");
+                            update(i, j, "West");
                             theBoard[i][j-1].anchor_horizontal = true;
                     }
                     if(!theBoard[i][j+1].used){//East
@@ -374,7 +426,7 @@ void Board::updateTiles(){ // Cross check, sets anchors, updates possible chars 
 //To generate all moves from Anchorsquare, assuming that there are k 
 // non-anchor squares to the left of it, we call Leftpart("", root of dawg, k)
 void Board::leftPart(string partialWord, Node* root, int kHoriz, Tile tile) {
-    extendRight(partialWord, root, tile);
+    extendRight(partialWord, root, tile, false);
     //cout << "finished right" << endl;
     if (kHoriz > 0) {
         //cout << "in here" << endl;
@@ -405,29 +457,106 @@ void Board::leftPart(string partialWord, Node* root, int kHoriz, Tile tile) {
     }
 }
 
-void Board::upPart(string partialWord, Node* root, int kVert) {
-    
+void Board::upPart(string partialWord, Node* root, int kVert, Tile tile) {
+    extendDown(partialWord, root, tile, false);
+    //cout << "finished right" << endl;
+    if (kVert > 0) {
+        //cout << "in here" << endl;
+        Node* tempNode = root;
+        for (int i = 0; i < tempNode->children().size(); i++) {
+            //cout << "over here" << endl;
+            
+            /*for(int m = 0; m < raw_rack.size(); m ++) {
+                cout << "The letter is: " << tempNode->children().at(i)->letter << " vs. " << raw_rack.at(m) << endl;
+            }*/
+            if ((find(raw_rack.begin(), raw_rack.end(), tempNode->children().at(i)->letter) != raw_rack.end())){
+                char tempChar = tempNode->children().at(i)->letter;
+                int rawRackIndex = 0;
+                for (int j = 0; j < raw_rack.size(); j++) {
+                    if (raw_rack.at(j) == tempChar) {
+                        rawRackIndex = j;
+                        break;
+                    }
+                }
+                
+                raw_rack.erase(raw_rack.begin()+rawRackIndex);
+                Node* nPrime =  tempNode->children().at(i);
+                
+                upPart(partialWord+tempChar, nPrime, kVert-1, tile);
+                raw_rack.insert(raw_rack.begin()+rawRackIndex, tempChar);
+            }
+        }
+    }
 }
 
-void Board::extendRight(string partialWord, Node* node, Tile tile) {
-    //cout << "Incomplete word: " << partialWord << endl;
-    if (!(tile.used)) {
-        if ((node->isComplete())) {
-           if((theBoard[tile.yCoord][(tile.xCoord)+1]).used || theBoard[tile.yCoord][tile.xCoord - partialWord.length()-1].used){
-               //cout << "Got here with: " << partialWord << endl;
-           }else{
-               //cout << "x coordinate: " << tile.xCoord << " y coordinate: " << tile.yCoord << " of tile with letter: " << partialWord[partialWord.length()-1] << endl;
-               cout << "Full word: " << partialWord << endl;
-               int word_length = partialWord.length();
-               int x_cord = tile.xCoord - word_length;
-               int y_cord = tile.yCoord;
-               legalMove(partialWord, x_cord, y_cord, "Right");
-           }
+void Board::extendRight(string partialWord, Node* node, Tile tile, bool prefixIsWord) {
+    if (!(tile.used)) { // or edge of the board?
+        if ((node->isComplete()) & !prefixIsWord){
+            //cout << "Node is complete(Right)? : " << node->isComplete() << " with letter: " << node->letter << endl;
+            //cout << "x coordinate: " << tile.xCoord << " y coordinate: " << tile.yCoord << " of tile with letter: " << partialWord[partialWord.length()-1] << endl;
+            //cout << "Full word: " << partialWord << endl;
+            int word_length = partialWord.length();
+            int x_cord = tile.xCoord - word_length;
+            int y_cord = tile.yCoord;
+            legalMove(partialWord, x_cord, y_cord, "Right");
+            return;
         }
         
         Node* tempNode = node;
         for (int i = 0; i < tempNode->children().size(); i++) {
              if (find(tile.crossVertical.begin(), tile.crossVertical.end(), tempNode->children().at(i)->letter) != tile.crossVertical.end() &&
+                find(raw_rack.begin(), raw_rack.end(), tempNode->children().at(i)->letter) != raw_rack.end()) {
+                char tempChar = tempNode->children().at(i)->letter;
+                //cout << "letter is " << tempChar << endl;
+                int rawRackIndex = 0;
+                for (int j = 0; j < raw_rack.size(); j++) {
+                    if (raw_rack.at(j) == tempChar) {
+                        rawRackIndex = j;
+                        break;
+                    }
+                }
+                raw_rack.erase(raw_rack.begin()+rawRackIndex);
+               
+                Node* nPrime =  tempNode->children().at(i);
+                //cout << "Child Node letter: " << nPrime->letter <<endl;
+                //cout << "Next tile has y coord: " << tile.yCoord << " and x coord: " << tile.xCoord << endl;
+                //cout << "tile.xCoord+1: " << (tile.xCoord)+1 << endl;
+                if (((tile.xCoord)+1) < 14){
+                    Tile nextTile = theBoard[tile.yCoord][tile.xCoord+1];
+                    //cout << "Next tile has y coord: " << nextTile.yCoord << " and x coord: " << nextTile.xCoord << endl;
+                    extendRight(partialWord+tempChar, nPrime, nextTile, false);
+                    raw_rack.insert(raw_rack.begin()+rawRackIndex, tempChar);
+                }
+            }
+        }
+    }else{
+        char charInTile = tile.letter;
+        Node* tempNode = node;
+        for (int i = 0; i < tempNode->children().size(); i++) {
+            if (tempNode->children().at(i)->letter == charInTile) {
+                Tile nextTile = theBoard[tile.yCoord][tile.xCoord+1];
+                extendRight(partialWord+charInTile, tempNode->children().at(i), nextTile, false);
+            }
+        }
+    }
+}
+
+void Board::extendDown(string partialWord, Node* node, Tile tile, bool prefixIsWord){
+    if (!(tile.used)) {
+        if ((node->isComplete()) & !prefixIsWord) {
+           //cout << "Node is complete(Down)? : " << node->isComplete() << " with letter: " << node->letter << endl;
+           //cout << "x coordinate: " << tile.xCoord << " y coordinate: " << tile.yCoord << " of tile with letter: " << partialWord[partialWord.length()-1] << endl;
+           //cout << "Full word: " << partialWord << endl;
+           int word_length = partialWord.length();
+           int x_cord = tile.xCoord;
+           int y_cord = tile.yCoord - word_length;
+           legalMove(partialWord, x_cord, y_cord, "Down");
+           return;
+        }
+        
+        Node* tempNode = node;
+        for (int i = 0; i < tempNode->children().size(); i++) {
+             if (find(tile.crossHorizontal.begin(), tile.crossHorizontal.end(), tempNode->children().at(i)->letter) != tile.crossHorizontal.end() &&
                 find(raw_rack.begin(), raw_rack.end(), tempNode->children().at(i)->letter) != raw_rack.end()) {
                 char tempChar = tempNode->children().at(i)->letter;
                 
@@ -444,11 +573,11 @@ void Board::extendRight(string partialWord, Node* node, Tile tile) {
                 Node* nPrime =  tempNode->children().at(i);
                 //cout << "Next tile has y coord: " << tile.yCoord << " and x coord: " << tile.xCoord << endl;
                 //cout << "tile.xCoord+1: " << (tile.xCoord)+1 << endl;
-                if (!(((tile.xCoord)+1) > 14)) {
-                    Tile nextTile = theBoard[tile.yCoord][tile.xCoord+1];
+                if (!(((tile.yCoord)+1) > 14)) {
+                    Tile nextTile = theBoard[tile.yCoord+1][tile.xCoord];
                     //cout << "Next tile has y coord: " << nextTile.yCoord << " and x coord: " << nextTile.xCoord << endl;
                     //cout << "about to recurse" << endl;
-                    extendRight(partialWord+tempChar, nPrime, nextTile);
+                    extendDown(partialWord+tempChar, nPrime, nextTile, false);
                     raw_rack.insert(raw_rack.begin()+rawRackIndex, tempChar);
                 }
             }
@@ -458,15 +587,82 @@ void Board::extendRight(string partialWord, Node* node, Tile tile) {
         Node* tempNode = node;
         for (int i = 0; i < tempNode->children().size(); i++) {
             if (tempNode->children().at(i)->letter == charInTile) {
-                Tile nextTile = theBoard[tile.yCoord][tile.xCoord+1];
-                extendRight(partialWord+charInTile, tempNode->children().at(i), nextTile);
+                Tile nextTile = theBoard[tile.yCoord+1][tile.xCoord];
+                extendDown(partialWord+charInTile, tempNode->children().at(i), nextTile, false);
             }
         }
     }
 }
 
-void Board::extendDown(string partialWord, Node* node, Tile tile){
-    
+
+void Board::placeHorizontal(int row, int col) {
+    if (col > 0) {
+        if (theBoard[row][col-1].used) {
+            string prefix;
+            Tile tileIt = theBoard[row][col-1];
+            int colIt = col-1;
+            while ((tileIt.used) && colIt >= 0) {
+                prefix += theBoard[row][colIt].letter;
+                colIt--;
+                tileIt = theBoard[row][colIt];
+            }
+            string flipPrefix;
+            for (int wrdLength = prefix.length()-1; wrdLength >= 0; wrdLength--) {
+                flipPrefix += prefix[wrdLength];
+            }
+
+            Node* partialNode = dictionary.findPartial(flipPrefix);
+            
+            if(dictionary.findWord(flipPrefix)){
+                extendRight(flipPrefix, partialNode, theBoard[row][col], true);
+            }
+            else if (partialNode != 0) {
+                extendRight(flipPrefix, partialNode, theBoard[row][col], false); 
+            }
+        }else{
+             leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
+        }
+    }else{
+        leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
+    }
+}
+
+void Board::placeVertical(int row, int col) {
+    if (row > 0) {
+        if (theBoard[row-1][col].used) {
+            string prefix = "";
+            Tile tileIt = theBoard[row-1][col];
+            int rowIt = row-1;
+            while ((tileIt.used) && rowIt >= 0) {
+                prefix += theBoard[rowIt][col].letter;
+                rowIt--;
+                if (rowIt < 0) {
+                    break;
+                }
+                tileIt = theBoard[rowIt][col];
+            }
+            string flipPrefix;
+            for (int wrdLength = prefix.length()-1; wrdLength >= 0; wrdLength--) {
+                flipPrefix += prefix[wrdLength];
+            }
+            
+            Node* partialNode = dictionary.findPartial(flipPrefix);
+            
+            
+            //This little guy caused lots of issues
+            if(dictionary.findWord(flipPrefix)){
+                extendDown(flipPrefix, partialNode, theBoard[row][col], true);
+            }
+            
+            else if (partialNode != 0) {
+                extendDown(flipPrefix, partialNode, theBoard[row][col], false); 
+            }
+        }else{
+            upPart("", dictionary.getRoot(), theBoard[row][col].kVertical, theBoard[row][col]);
+        }
+    }else{
+        upPart("", dictionary.getRoot(), theBoard[row][col].kVertical, theBoard[row][col]);
+    }
 }
 
 //Wrapper function that facilitates the placement of a word
@@ -475,33 +671,14 @@ void Board::placeWord() {
     for (int row = 0; row < 15; row++) {
         for(int col = 0; col < 15; col++) {
             if (theBoard[row][col].anchor_horizontal && theBoard[row][col].anchor_vertical) { //If tile is both vertical and horizontal anchor
-                //for (int rackWord = 0; rackWord < rack_words.size(); rackWord++) {
-                    //string word = rack_words[rackWord];
-                    //If statement that checks if first letter of rack word is in both cross-check vectors
-                   //if (find(theBoard[row][col].crossHorizontal.begin(), theBoard[row][col].crossHorizontal.end(), word[word.length()-1]) != theBoard[row][col].crossHorizontal.end()
-                        //&& find(theBoard[row][col].crossVertical.begin(), theBoard[row][col].crossVertical.end(), word[word.length()-1]) != theBoard[row][col].crossVertical.end()) {
-                        cout << "Tile is at x: " << theBoard[row][col].xCoord << " y: " << theBoard[row][col].yCoord << " with kHorizontal: " << theBoard[row][col].kHorizontal << endl;
-                        leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]); 
-                       
-                    //}
-                //}
+                placeHorizontal(row,col);
+                placeVertical(row,col);
             }
-            else if ((theBoard[row][col].anchor_horizontal)) { //If tile is only a horizontal anchor
-                //for (int rackWord = 0; rackWord < rack_words.size(); rackWord++) {
-                    //string word = rack_words[rackWord];
-                    //if (find(theBoard[row][col].crossHorizontal.begin(), theBoard[row][col].crossHorizontal.end(), word[word.length()-1]) != theBoard[row][col].crossHorizontal.end()) {
-                         leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
-                        
-                    //}
+            if ((theBoard[row][col].anchor_horizontal)) { //If tile is only a horizontal anchor
+                placeHorizontal(row,col);
             }
             else if (theBoard[row][col].anchor_vertical) { //If tile is only a vertical anchor
-                //for (int rackWord = 0; rackWord < rack_words.size(); rackWord++) {
-                    //string word = rack_words[rackWord];
-                    //if (find(theBoard[row][col].crossVertical.begin(), theBoard[row][col].crossVertical.end(), word[word.length()-1]) != theBoard[row][col].crossVertical.end()) {
-                         leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
-                
-                    //}
-                //}
+                placeVertical(row,col);
             }else{
                 continue;
             }
@@ -596,6 +773,21 @@ Board::Board(){
     }
     import_board.close();
     //End read in of board.
+    
+    //Load letter vals into map
+    ifstream letter_vals ("Values.txt");
+    while(getline(letter_vals,line)){
+        string int_string;
+        char temp_char = tolower(line[0]);
+        for(int i=2; i < line.length(); i++){
+            int_string += char(tolower(line[i]));
+        }
+        int temp_int = stoi(int_string);
+        //cout << "letter: " << temp_char << " Value: " << temp_int << endl;
+        letterValues.insert(pair<char,int>(temp_char, temp_int));
+    }
+    letter_vals.close();
+    //Finish load letter vals into map
     
     // Now call board analyzer to update tiles for imported board.
     updateTiles();

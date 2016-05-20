@@ -64,11 +64,12 @@ void Trie::newWord(string s){
     for(int i = 0; i < s.length(); i++){        
         Node* child = current->findChild(s[i]);
         if (child != NULL){
-            current = child;
+            current = child; //Becomes root no parent
         }else{
             Node* tmp = new Node();
             tmp->setChar(s[i]);
             current->appendChild(tmp);
+            tmp->parent = current;
             current = tmp;
         }
         if (i == s.length() - 1){
@@ -96,23 +97,15 @@ bool Trie::findWord(string s){
     return false;
 }
 
-
-
-/*void Trie::getRackWords(const string& prefix, map<char, int>& rack, vector<string>& results){
-        if (complete_word){
-            results.push_back(prefix);
-        }
-        Node* temp = root;
-        while(temp != NULL){
-            if(rack.)
-        }
-        
-        for(map<char, Trie*>::iterator it = children.begin(); it != children.end(); it++){
-            if (rack.find(it->first) != rack.end() && rack[it->first] > 0){
-                    rack[it->first] -=1;
-                    it->second->getRackWords(prefix + it->first, rack, results);
-                    rack[it->first] +=1;
-            }
+Node* Trie::findPartial(string s){
+    Node* current = root;
+    for(int i = 0; i < s.length(); i++){
+        if (current->findChild(s[i]) == NULL) {
+            return NULL;
+        }else{
+            Node* tmp = current->findChild(s[i]);
+            current = tmp;
         }
     }
-    */
+    return current;
+}

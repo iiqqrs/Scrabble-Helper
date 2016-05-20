@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <map>
 #include "Trie.h"
 using namespace std;
 
@@ -63,15 +64,18 @@ class Board{
         vector<char> raw_rack;
         vector<Tile> rack;
         Tile theBoard[15][15];
+        map<char, int> letterValues;
         void updateTiles();
         void update(int row, int column, string direction);
         void updateKvals();
         void placeWord();
         void leftPart(string partialWord, Node* root, int kHoriz, Tile tile);
-        void upPart(string partialWord, Node* root, int kVert);
-        void extendRight(string partialWord, Node* node, Tile tile);
-        void extendDown(string partialWord, Node* node, Tile tile);
+        void upPart(string partialWord, Node* root, int kVert, Tile tile);
+        void extendRight(string partialWord, Node* node, Tile tile, bool prefixIsWord);
+        void extendDown(string partialWord, Node* node, Tile tile, bool prefixIsWord);
         void legalMove(string word, int x_coord, int y_coord, string move_direction);
+        void placeVertical(int row, int col);
+        void placeHorizontal(int row, int col);
 
         Board();
 };

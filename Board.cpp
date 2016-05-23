@@ -7,12 +7,6 @@
 #include "Board.h"
 using namespace std;
 
-//TO DO:
-//Words that should be printing (among others possibly):
-//faux
-//roux
-
-//i j
 void Board::legalMove(string word, int y_coord, int x_coord, string move_direction){
     int move_score=0;
     int letterMult[word.length()];
@@ -76,6 +70,9 @@ void Board::legalMove(string word, int y_coord, int x_coord, string move_directi
         move_score = (wordSum*largestWordMult);
     }
     
+    if (move_score > 10){
+        cout << word << " at " << x_coord << ", " << y_coord << endl;
+    }
     //Make a new move and enter into priority queue
     Move m;
     m.score = move_score;
@@ -224,7 +221,6 @@ void Board::updateKvals(){
                     }
                 }
                 theBoard[i][j].kHorizontal = k_count_west;
-                
                 
                 //Vertical
                 int northIt = i-1;
@@ -495,11 +491,15 @@ void Board::extendRight(string partialWord, Node* node, Tile tile, bool prefixIs
             //cout << "Node is complete(Right)? : " << node->isComplete() << " with letter: " << node->letter << endl;
             //cout << "x coordinate: " << tile.xCoord << " y coordinate: " << tile.yCoord << " of tile with letter: " << partialWord[partialWord.length()-1] << endl;
             //cout << "Full word: " << partialWord << endl;
+
             int word_length = partialWord.length();
             int x_cord = tile.xCoord - word_length;
             int y_cord = tile.yCoord;
+           if (partialWord.compare("fix")==0){
+                cout << tile.xCoord << ", " << tile.yCoord << endl;
+            }            
             legalMove(partialWord, x_cord, y_cord, "Right");
-            return;
+            //return;
         }
         
         Node* tempNode = node;
@@ -550,8 +550,12 @@ void Board::extendDown(string partialWord, Node* node, Tile tile, bool prefixIsW
            int word_length = partialWord.length();
            int x_cord = tile.xCoord;
            int y_cord = tile.yCoord - word_length;
+           if (partialWord.compare("fix")==0){
+                //cout << tile.xCoord << ", " << tile.yCoord << endl;
+            }
+           
            legalMove(partialWord, x_cord, y_cord, "Down");
-           return;
+           //return;
         }
         
         Node* tempNode = node;
@@ -620,9 +624,16 @@ void Board::placeHorizontal(int row, int col) {
                 extendRight(flipPrefix, partialNode, theBoard[row][col], false); 
             }
         }else{
+            //This is the fix
+            if (row < 14){
+                row = row+1;
+            }
              leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
         }
     }else{
+        if (row < 14){
+            row = row+1;
+        }        
         leftPart("", dictionary.getRoot(), theBoard[row][col].kHorizontal, theBoard[row][col]);
     }
 }
@@ -658,9 +669,15 @@ void Board::placeVertical(int row, int col) {
                 extendDown(flipPrefix, partialNode, theBoard[row][col], false); 
             }
         }else{
+            if (col < 14){
+                col = col+1;
+            }
             upPart("", dictionary.getRoot(), theBoard[row][col].kVertical, theBoard[row][col]);
         }
     }else{
+        if (col < 14){
+            col = col+1;
+        }        
         upPart("", dictionary.getRoot(), theBoard[row][col].kVertical, theBoard[row][col]);
     }
 }
@@ -673,8 +690,7 @@ void Board::placeWord() {
             if (theBoard[row][col].anchor_horizontal && theBoard[row][col].anchor_vertical) { //If tile is both vertical and horizontal anchor
                 placeHorizontal(row,col);
                 placeVertical(row,col);
-            }
-            if ((theBoard[row][col].anchor_horizontal)) { //If tile is only a horizontal anchor
+            } else if ((theBoard[row][col].anchor_horizontal)) { //If tile is only a horizontal anchor
                 placeHorizontal(row,col);
             }
             else if (theBoard[row][col].anchor_vertical) { //If tile is only a vertical anchor

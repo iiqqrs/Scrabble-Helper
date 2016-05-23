@@ -5,20 +5,8 @@
 
 int main(){
     Board newB;
-    
     newB.updateTiles();
     newB.placeWord();
-    
-    
-    //for (int i = 0; i < newB.theBoard[8][5].crossHorizontal.size(); i++) {
-    //    cout << newB.theBoard[8][5].crossHorizontal.at(i) << endl;
-    //}
-   
-    
-    //Node* prefixNode = newB.dictionary.findPartial("ad");
-    //newB.extendRight("ad", prefixNode, newB.theBoard[7][7]);
-    
-    
     
     //This should be our final output :)
     for(int i = 0; i < 20; i++){
